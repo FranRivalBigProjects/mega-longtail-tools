@@ -1,9 +1,1162 @@
-<html><head><meta charset='UTF-8'><title>rust ecs architecture visualizer</title>
-<link rel='stylesheet' href='styles.css'></head>
-<body><div class='container'>
-<h1>rust ecs architecture visualizer</h1>
-<textarea id='input' placeholder='Paste code / describe issue'></textarea>
-<input id='value' placeholder='Optional context'>
-<button onclick='run()'>Analyze</button>
-<div id='res' class='result'></div>
-</div><script src='script.js'></script></body></html>
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Rust ECS Architecture Visualizer – Entity Component System Tool</title>
+
+<meta name="description" content="Free Rust ECS architecture visualizer. Define entities and components to generate a visual map of your Entity Component System. Understand data-oriented design patterns with interactive diagrams.">
+
+<meta name="keywords" content="rust ecs architecture visualizer, entity component system rust, ecs visualization tool, rust ecs pattern, entity component system visualizer, data oriented design rust, bevy ecs visualizer, rust game engine architecture">
+
+<link rel="canonical" href="https://franrivalbigprojects.github.io/mega-longtail-tools/rust-ecs-architecture-visualizer/">
+
+<meta property="og:title" content="Rust ECS Architecture Visualizer – Entity Component System Tool">
+<meta property="og:description" content="Visualize Entity Component System architecture in Rust. Define entities and components and generate an interactive ECS diagram instantly.">
+<meta property="og:type" content="website">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #07090f;
+  --surface: #0d1117;
+  --surface2: #131a26;
+  --border: #1e2d3d;
+  --border-light: #263a52;
+  --rust: #e8834a;
+  --rust-dim: rgba(232,131,74,0.12);
+  --rust-dim2: rgba(232,131,74,0.06);
+  --teal: #2dd4bf;
+  --teal-dim: rgba(45,212,191,0.1);
+  --purple: #a78bfa;
+  --purple-dim: rgba(167,139,250,0.1);
+  --gold: #f59e0b;
+  --gold-dim: rgba(245,158,11,0.08);
+  --red: #f87171;
+  --red-dim: rgba(248,113,113,0.08);
+  --text: #dce8f5;
+  --text-muted: #5b7a99;
+  --text-dim: #2a3d52;
+  --mono: 'Fira Code', monospace;
+  --sans: 'Barlow', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* ─── HEADER ─── */
+header {
+  border-bottom: 1px solid var(--border);
+  padding: 13px 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(7,9,15,0.95);
+  backdrop-filter: blur(10px);
+}
+
+.header-inner {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-rust {
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--rust);
+  background: var(--rust-dim2);
+  border: 1px solid rgba(232,131,74,0.2);
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-text {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.logo-text strong { color: var(--rust); font-weight: 500; }
+
+/* ─── WRAPPER ─── */
+.wrapper { max-width: 980px; margin: 0 auto; padding: 0 24px 80px; }
+
+/* ─── HERO ─── */
+.hero {
+  padding: 48px 0 36px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 36px;
+}
+
+.hero-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rust);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hero-eyebrow::before {
+  content: '';
+  width: 16px;
+  height: 1px;
+  background: var(--rust);
+  opacity: 0.5;
+}
+
+h1 {
+  font-size: clamp(22px, 3.5vw, 30px);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text);
+  margin-bottom: 14px;
+  letter-spacing: -0.02em;
+}
+
+h1 em { font-style: normal; color: var(--rust); }
+
+.hero-sub {
+  font-size: 15px;
+  color: var(--text-muted);
+  max-width: 620px;
+  line-height: 1.75;
+  margin-bottom: 22px;
+}
+
+.hero-sub strong { color: var(--text); }
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.badge {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border-light);
+  color: var(--text-muted);
+}
+
+.badge.rust {
+  color: var(--rust);
+  background: var(--rust-dim2);
+  border-color: rgba(232,131,74,0.25);
+}
+
+/* ─── TOOL LAYOUT ─── */
+.tool-layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+  align-items: start;
+}
+
+/* ─── INPUT PANEL ─── */
+.input-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.panel-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+}
+
+.section-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--rust);
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+  margin-top: 14px;
+}
+
+.section-title:first-of-type { margin-top: 0; }
+
+.tag-input-wrap {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.tag-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 8px 10px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+  transition: border-color 0.2s;
+}
+
+.tag-input:focus { outline: none; border-color: rgba(232,131,74,0.4); }
+.tag-input::placeholder { color: var(--text-dim); }
+
+.add-btn {
+  background: var(--rust-dim);
+  border: 1px solid rgba(232,131,74,0.25);
+  color: var(--rust);
+  border-radius: 5px;
+  padding: 8px 12px;
+  font-family: var(--mono);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.add-btn:hover { background: rgba(232,131,74,0.2); }
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-height: 28px;
+  margin-bottom: 6px;
+}
+
+.tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tag:hover { opacity: 0.7; }
+
+.tag-entity {
+  background: var(--teal-dim);
+  color: var(--teal);
+  border-color: rgba(45,212,191,0.25);
+}
+
+.tag-component {
+  background: var(--purple-dim);
+  color: var(--purple);
+  border-color: rgba(167,139,250,0.25);
+}
+
+.tag-system {
+  background: var(--gold-dim);
+  color: var(--gold);
+  border-color: rgba(245,158,11,0.25);
+}
+
+.tag-remove { font-size: 10px; opacity: 0.7; }
+
+/* entity-component assignment */
+.assign-wrap {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 10px;
+  margin-top: 8px;
+}
+
+.assign-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 8px;
+}
+
+.assign-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+
+.assign-row:last-child { margin-bottom: 0; }
+
+.assign-entity {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--teal);
+  width: 90px;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assign-comp {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: var(--purple-dim);
+  color: var(--purple);
+  border: 1px solid rgba(167,139,250,0.2);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.assign-comp.active {
+  background: rgba(167,139,250,0.3);
+  border-color: rgba(167,139,250,0.5);
+}
+
+.assign-comp:hover { background: rgba(167,139,250,0.2); }
+
+.visualize-btn {
+  width: 100%;
+  margin-top: 14px;
+  padding: 11px;
+  background: var(--rust);
+  color: var(--bg);
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 700;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.visualize-btn:hover { opacity: 0.85; }
+.visualize-btn:active { transform: scale(0.98); }
+
+.sample-btn {
+  width: 100%;
+  margin-top: 8px;
+  padding: 9px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.sample-btn:hover { color: var(--text); border-color: var(--text-dim); }
+
+/* ─── CANVAS PANEL ─── */
+.canvas-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+}
+
+.canvas-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#canvas {
+  flex: 1;
+  width: 100%;
+  min-height: 380px;
+  border-radius: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.canvas-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 12px;
+  min-height: 380px;
+  gap: 8px;
+  text-align: center;
+}
+
+.canvas-empty-icon { font-size: 32px; opacity: 0.4; }
+
+/* ─── LEGEND ─── */
+.legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+/* ─── DIVIDER ─── */
+hr.divider { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
+
+/* ─── CONTENT ─── */
+.content-section { margin-bottom: 48px; }
+
+.section-eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rust);
+  opacity: 0.7;
+  margin-bottom: 8px;
+  display: block;
+}
+
+h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 14px;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+p {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.8;
+  margin-bottom: 12px;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--surface2);
+  color: var(--rust);
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid var(--border-light);
+}
+
+.ecs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.ecs-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px;
+}
+
+.ecs-card-eye {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+
+.ecs-card strong {
+  font-size: 14px;
+  color: var(--text);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.ecs-card p { font-size: 13px; margin: 0; }
+
+/* ─── FAQ ─── */
+.faq-list {
+  margin-top: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.faq-item { border-bottom: 1px solid var(--border); }
+.faq-item:last-child { border-bottom: none; }
+
+.faq-q {
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: none;
+  padding: 15px 20px;
+  font-size: 14px;
+  color: var(--text);
+  font-family: var(--sans);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  transition: background 0.15s;
+  font-weight: 500;
+}
+
+.faq-q:hover { background: var(--rust-dim2); }
+
+.faq-arrow {
+  font-size: 11px;
+  color: var(--text-dim);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+  font-family: var(--mono);
+}
+
+.faq-item.open .faq-arrow { transform: rotate(180deg); }
+
+.faq-a {
+  display: none;
+  padding: 0 20px 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.75;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.faq-item.open .faq-a { display: block; }
+
+/* ─── FOOTER ─── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 22px 0;
+}
+
+.footer-inner {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+footer p {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  margin: 0;
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 720px) {
+  .tool-layout { grid-template-columns: 1fr; }
+  .ecs-grid { grid-template-columns: 1fr; }
+  .hero { padding: 32px 0 24px; }
+}
+</style>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Rust ECS Architecture Visualizer",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Web",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "description": "Free online Rust ECS architecture visualizer. Define entities, components, and systems to generate an interactive visual map of your Entity Component System design. No installation required.",
+  "featureList": "ECS entity visualization, component assignment, system mapping, Rust ECS patterns, data-oriented design visualization, Bevy ECS patterns"
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is an Entity Component System (ECS) in Rust?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "An Entity Component System (ECS) is an architectural pattern common in Rust game engines and simulation software. Entities are unique IDs, Components are plain data structs attached to entities, and Systems are functions that process entities with specific component combinations. Rust's ownership model and zero-cost abstractions make it particularly well-suited for high-performance ECS implementations like Bevy, hecs, and Legion."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I visualize ECS architecture in Rust?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "To visualize ECS architecture: define your entity types (Player, Enemy, Projectile), list your component types (Position, Health, Velocity, Sprite), and assign components to entities. This tool generates a visual map showing which components each entity holds and which systems process them — making the data-oriented structure of your ECS immediately clear."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the difference between ECS and OOP in Rust?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "In OOP, behavior is bundled into class hierarchies — a Player class inherits from Character. In ECS, behavior is decomposed: an entity is just an ID, components hold data (struct Position { x: f32, y: f32 }), and systems contain logic. ECS enables better cache performance (components stored contiguously in memory), composition without inheritance explosions, and parallel system execution — key advantages in Rust's data-oriented design philosophy."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which ECS frameworks are available for Rust?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Major Rust ECS frameworks: Bevy ECS (part of the Bevy game engine, most popular), hecs (minimal, no macros), Legion (high-performance, parallel systems), Specs (battle-tested, first major Rust ECS), and shipyard (group-based storage). Each makes different trade-offs between ergonomics, performance, and parallelism. Bevy ECS is the most beginner-friendly and has the largest ecosystem."
+      }
+    }
+  ]
+}
+</script>
+
+</head>
+
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo-rust">⚙</div>
+    <span class="logo-text"><strong>rust</strong>-ecs-architecture-visualizer</span>
+  </div>
+</header>
+
+<div class="wrapper">
+
+  <!-- HERO -->
+
+  <section class="hero">
+    <p class="hero-eyebrow">Free Rust Developer Tool</p>
+    <h1>Rust ECS Architecture Visualizer —<br><em>Map Entities, Components & Systems</em></h1>
+    <p class="hero-sub">
+      Define your <strong>Entities, Components, and Systems</strong> to generate an interactive visual map of your ECS architecture. Understand data-oriented design patterns used in Bevy, hecs, Legion, and other Rust game engines.
+    </p>
+    <div class="badges">
+      <span class="badge rust">Rust ECS</span>
+      <span class="badge rust">Bevy patterns</span>
+      <span class="badge">Interactive diagram</span>
+      <span class="badge">Data-oriented design</span>
+      <span class="badge">Free · No login</span>
+    </div>
+  </section>
+
+  <!-- TOOL -->
+
+  <div class="tool-layout">
+
+
+<!-- Input panel -->
+<div class="input-panel">
+  <p class="panel-label">// Define your ECS world</p>
+
+  <p class="section-title">Entities</p>
+  <div class="tag-input-wrap">
+    <input class="tag-input" id="entityInput" placeholder="e.g. Player" onkeydown="if(event.key==='Enter')addEntity()">
+    <button class="add-btn" onclick="addEntity()">+</button>
+  </div>
+  <div class="tag-list" id="entityList"></div>
+
+  <p class="section-title">Components</p>
+  <div class="tag-input-wrap">
+    <input class="tag-input" id="compInput" placeholder="e.g. Position" onkeydown="if(event.key==='Enter')addComponent()">
+    <button class="add-btn" onclick="addComponent()">+</button>
+  </div>
+  <div class="tag-list" id="compList"></div>
+
+  <p class="section-title">Systems</p>
+  <div class="tag-input-wrap">
+    <input class="tag-input" id="sysInput" placeholder="e.g. MovementSystem" onkeydown="if(event.key==='Enter')addSystem()">
+    <button class="add-btn" onclick="addSystem()">+</button>
+  </div>
+  <div class="tag-list" id="sysList"></div>
+
+  <!-- Component assignment -->
+  <div class="assign-wrap" id="assignWrap" style="display:none">
+    <p class="assign-label">// Assign components to entities (click to toggle)</p>
+    <div id="assignRows"></div>
+  </div>
+
+  <button class="visualize-btn" onclick="visualize()">Visualize ECS Architecture</button>
+  <button class="sample-btn" onclick="loadSample()">Load Game Engine Sample</button>
+</div>
+
+<!-- Canvas panel -->
+<div class="canvas-panel">
+  <div class="canvas-label">
+    <span>// Architecture diagram</span>
+  </div>
+  <div id="canvasWrap">
+    <div class="canvas-empty" id="emptyState">
+      <span class="canvas-empty-icon">⬡</span>
+      <span>Add entities and components,<br>then click Visualize</span>
+    </div>
+  </div>
+  <div class="legend" id="legend" style="display:none">
+    <div class="legend-item"><div class="legend-dot" style="background:#2dd4bf"></div>Entity</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div>Component</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>System</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#e8834a;opacity:0.4"></div>Connection</div>
+  </div>
+</div>
+```
+
+  </div>
+
+  <hr class="divider">
+
+  <!-- WHAT IS ECS -->
+
+  <section class="content-section">
+    <span class="section-eyebrow">// Core concept</span>
+    <h3>What Is Entity Component System Architecture in Rust?</h3>
+    <p>
+      The <strong>Entity Component System (ECS)</strong> is an architectural pattern that decomposes game objects and simulations into three distinct elements. It solves the combinatorial explosion problem that arises from deep OOP inheritance hierarchies — a problem that becomes acute in game development when objects need to mix and match behaviors dynamically.
+    </p>
+    <p>
+      Rust's ownership system, zero-cost abstractions, and data-oriented philosophy make it an exceptionally well-suited language for ECS implementations. When components are stored contiguously in memory (as they are in most Rust ECS frameworks), iterating over all entities with a specific component combination achieves near-optimal CPU cache utilization — something that pointer-chasing OOP designs cannot match.
+    </p>
+    <div class="ecs-grid">
+      <div class="ecs-card">
+        <p class="ecs-card-eye" style="color:var(--teal)">Entity //</p>
+        <strong>Entity</strong>
+        <p>A unique identifier — just a number (u64 or u32). No data, no behavior. In Rust: <code>struct Entity(u64);</code>. Entities are containers that Components attach to.</p>
+      </div>
+      <div class="ecs-card">
+        <p class="ecs-card-eye" style="color:var(--purple)">Component //</p>
+        <strong>Component</strong>
+        <p>Plain data structs with no logic. <code>struct Position { x: f32, y: f32 }</code>. Stored contiguously in memory for cache efficiency. An entity can have multiple components.</p>
+      </div>
+      <div class="ecs-card">
+        <p class="ecs-card-eye" style="color:var(--gold)">System //</p>
+        <strong>System</strong>
+        <p>Functions that query and process entities with specific component combinations. <code>fn movement_system(query: Query&lt;&amp;mut Position, &amp;Velocity&gt;)</code>. Can run in parallel.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- WHY RUST FOR ECS -->
+
+  <section class="content-section">
+    <span class="section-eyebrow">// Why Rust</span>
+    <h3>Why Rust Is Ideal for ECS Architecture</h3>
+    <p>
+      Rust's memory model aligns naturally with ECS's data-oriented design. In a typical OOP game engine, game objects are heap-allocated and accessed through pointers — cache misses are frequent when iterating. In a Rust ECS, components of the same type are stored in contiguous <code>Vec&lt;T&gt;</code> allocations (called archetypes in Bevy). Iterating over all <code>Position</code> components processes memory sequentially, maximizing cache line utilization.
+    </p>
+    <p>
+      Rust's borrow checker enforces ECS's data access patterns at compile time. A system that reads <code>&amp;Position</code> and writes <code>&amp;mut Velocity</code> cannot accidentally conflict with another system reading <code>&amp;Velocity</code> — the type system prevents data races without runtime locks. This enables safe parallel system execution that would require careful synchronization in other languages.
+    </p>
+    <p>
+      Major Rust ECS frameworks: <strong>Bevy ECS</strong> (ergonomic, most popular, used in the Bevy game engine), <strong>hecs</strong> (minimal, no macros, pure archetype storage), <strong>Legion</strong> (high-performance parallel queries), <strong>Specs</strong> (battle-tested, first major Rust ECS), and <strong>shipyard</strong> (unique storage groups). This visualizer helps you design the entity/component/system architecture before choosing a framework.
+    </p>
+  </section>
+
+  <hr class="divider">
+
+  <!-- FAQ -->
+
+  <section class="content-section">
+    <span class="section-eyebrow">// FAQ</span>
+    <h3>Frequently Asked Questions</h3>
+    <div class="faq-list">
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          What is an Entity Component System (ECS) in Rust?
+          <span class="faq-arrow">▾</span>
+        </button>
+        <div class="faq-a">ECS is an architectural pattern common in Rust game engines. Entities are unique IDs (<code>u64</code>), Components are plain data structs (<code>struct Position { x: f32, y: f32 }</code>), and Systems are functions that process entities matching a component query. Rust's ownership model makes ECS particularly powerful — parallel systems are safe at compile time.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          How do I use this ECS visualizer?
+          <span class="faq-arrow">▾</span>
+        </button>
+        <div class="faq-a">Add your entity types (Player, Enemy, Projectile), component types (Position, Health, Velocity), and system names (MovementSystem, RenderSystem). Click the component tags to assign them to each entity, then click Visualize ECS Architecture to generate the diagram. Use "Load Game Engine Sample" to see an example first.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          What Rust ECS frameworks can I use this to plan?
+          <span class="faq-arrow">▾</span>
+        </button>
+        <div class="faq-a">This visualizer is framework-agnostic. Use it to plan architecture for Bevy ECS, hecs, Legion, Specs, or shipyard. The entity/component/system concepts are consistent across all Rust ECS implementations — the main differences are in the query API and storage internals, not the conceptual architecture.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Why is ECS more performant than OOP for games?
+          <span class="faq-arrow">▾</span>
+        </button>
+        <div class="faq-a">OOP game objects are scattered in heap memory — iterating over 1000 enemies means following 1000 pointers, causing cache misses. ECS stores all Position components contiguously in memory. Iterating over them processes cache lines sequentially at maximum CPU throughput. For large numbers of entities (10k+), this can be 10-100x faster in tight loops.</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <p>rust-ecs-architecture-visualizer · free · browser-only · no login</p>
+    <p>bevy · hecs · legion · specs · data-oriented design</p>
+  </div>
+</footer>
+
+<script>
+// ─── STATE ───
+let entities = [];
+let components = [];
+let systems = [];
+let assignments = {}; // entity -> Set of components
+
+// ─── ADD FUNCTIONS ───
+function addEntity() {
+  const inp = document.getElementById('entityInput');
+  const name = inp.value.trim();
+  if (!name || entities.includes(name)) { inp.value = ''; return; }
+  entities.push(name);
+  assignments[name] = new Set();
+  inp.value = '';
+  renderTags();
+  renderAssign();
+}
+
+function addComponent() {
+  const inp = document.getElementById('compInput');
+  const name = inp.value.trim();
+  if (!name || components.includes(name)) { inp.value = ''; return; }
+  components.push(name);
+  inp.value = '';
+  renderTags();
+  renderAssign();
+}
+
+function addSystem() {
+  const inp = document.getElementById('sysInput');
+  const name = inp.value.trim();
+  if (!name || systems.includes(name)) { inp.value = ''; return; }
+  systems.push(name);
+  inp.value = '';
+  renderTags();
+}
+
+function removeEntity(name) {
+  entities = entities.filter(e => e !== name);
+  delete assignments[name];
+  renderTags(); renderAssign();
+}
+
+function removeComponent(name) {
+  components = components.filter(c => c !== name);
+  for (const e of entities) assignments[e].delete(name);
+  renderTags(); renderAssign();
+}
+
+function removeSystem(name) {
+  systems = systems.filter(s => s !== name);
+  renderTags();
+}
+
+// ─── RENDER TAGS ───
+function renderTags() {
+  document.getElementById('entityList').innerHTML = entities.map(e =>
+    `<span class="tag tag-entity" onclick="removeEntity('${e}')">${e} <span class="tag-remove">✕</span></span>`
+  ).join('');
+  document.getElementById('compList').innerHTML = components.map(c =>
+    `<span class="tag tag-component" onclick="removeComponent('${c}')">${c} <span class="tag-remove">✕</span></span>`
+  ).join('');
+  document.getElementById('sysList').innerHTML = systems.map(s =>
+    `<span class="tag tag-system" onclick="removeSystem('${s}')">${s} <span class="tag-remove">✕</span></span>`
+  ).join('');
+}
+
+// ─── RENDER ASSIGNMENT UI ───
+function renderAssign() {
+  const wrap = document.getElementById('assignWrap');
+  const rows = document.getElementById('assignRows');
+  if (entities.length === 0 || components.length === 0) {
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'block';
+  rows.innerHTML = entities.map(e => `
+    <div class="assign-row">
+      <span class="assign-entity" title="${e}">${e}</span>
+      ${components.map(c => `
+        <span class="assign-comp ${assignments[e] && assignments[e].has(c) ? 'active' : ''}"
+          onclick="toggleAssign('${e}','${c}')">${c}</span>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function toggleAssign(entity, comp) {
+  if (!assignments[entity]) assignments[entity] = new Set();
+  if (assignments[entity].has(comp)) {
+    assignments[entity].delete(comp);
+  } else {
+    assignments[entity].add(comp);
+  }
+  renderAssign();
+}
+
+// ─── VISUALIZE ───
+function visualize() {
+  if (entities.length === 0 && components.length === 0) return;
+
+  document.getElementById('emptyState') && document.getElementById('emptyState').remove();
+  document.getElementById('legend').style.display = 'flex';
+
+  const wrap = document.getElementById('canvasWrap');
+
+  // Remove old canvas
+  const old = document.getElementById('canvas');
+  if (old) old.remove();
+
+  const canvas = document.createElement('canvas');
+  canvas.id = 'canvas';
+  wrap.innerHTML = '';
+  wrap.appendChild(canvas);
+
+  const W = wrap.clientWidth || 580;
+  const H = Math.max(420, entities.length * 80 + components.length * 60 + 100);
+  canvas.width = W;
+  canvas.height = H;
+
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+
+  // Colors
+  const COLORS = {
+    entity: '#2dd4bf',
+    component: '#a78bfa',
+    system: '#f59e0b',
+    bg: '#07090f',
+    border: '#1e2d3d',
+    line: 'rgba(232,131,74,0.25)',
+    lineActive: 'rgba(232,131,74,0.5)',
+    text: '#dce8f5',
+    textMuted: '#5b7a99'
+  };
+
+  ctx.fillStyle = COLORS.bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Layout
+  const nodePositions = {};
+  const padding = 30;
+  const nodeR = 24;
+
+  // Entities — left column
+  const entityX = padding + nodeR + 20;
+  entities.forEach((e, i) => {
+    const y = padding + 50 + i * (H - padding * 2 - 50) / Math.max(1, entities.length - 0.5);
+    nodePositions['e:' + e] = { x: entityX, y, type: 'entity', name: e };
+  });
+
+  // Components — middle column
+  const compX = W / 2;
+  components.forEach((c, i) => {
+    const y = padding + 40 + i * (H - padding * 2 - 40) / Math.max(1, components.length - 0.5);
+    nodePositions['c:' + c] = { x: compX, y, type: 'component', name: c };
+  });
+
+  // Systems — right column
+  const sysX = W - padding - nodeR - 20;
+  systems.forEach((s, i) => {
+    const y = padding + 50 + i * (H - padding * 2 - 50) / Math.max(1, systems.length - 0.5);
+    nodePositions['s:' + s] = { x: sysX, y, type: 'system', name: s };
+  });
+
+  // Column labels
+  ctx.font = '500 10px Fira Code, monospace';
+  ctx.letterSpacing = '0.1em';
+  ctx.fillStyle = COLORS.entity;
+  ctx.fillText('ENTITIES', entityX - 30, padding + 20);
+  ctx.fillStyle = COLORS.component;
+  ctx.fillText('COMPONENTS', compX - 38, padding + 20);
+  if (systems.length > 0) {
+    ctx.fillStyle = COLORS.system;
+    ctx.fillText('SYSTEMS', sysX - 24, padding + 20);
+  }
+
+  // Draw lines entity → component
+  entities.forEach(e => {
+    const ePos = nodePositions['e:' + e];
+    if (!ePos) return;
+    const assigned = assignments[e] || new Set();
+    components.forEach(c => {
+      const cPos = nodePositions['c:' + c];
+      if (!cPos) return;
+      const active = assigned.has(c);
+      ctx.beginPath();
+      ctx.moveTo(ePos.x + nodeR, ePos.y);
+      // Bezier curve
+      const cx1 = ePos.x + nodeR + (cPos.x - ePos.x - nodeR * 2) * 0.4;
+      const cx2 = ePos.x + nodeR + (cPos.x - ePos.x - nodeR * 2) * 0.6;
+      ctx.bezierCurveTo(cx1, ePos.y, cx2, cPos.y, cPos.x - nodeR, cPos.y);
+      ctx.strokeStyle = active ? COLORS.lineActive : COLORS.line;
+      ctx.lineWidth = active ? 1.5 : 0.5;
+      ctx.setLineDash(active ? [] : [3, 5]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    });
+  });
+
+  // Draw lines component → system (connect all if systems exist)
+  if (systems.length > 0) {
+    components.forEach(c => {
+      const cPos = nodePositions['c:' + c];
+      if (!cPos) return;
+      systems.forEach(s => {
+        const sPos = nodePositions['s:' + s];
+        if (!sPos) return;
+        ctx.beginPath();
+        ctx.moveTo(cPos.x + nodeR, cPos.y);
+        const cx1 = cPos.x + nodeR + (sPos.x - cPos.x - nodeR * 2) * 0.4;
+        const cx2 = cPos.x + nodeR + (sPos.x - cPos.x - nodeR * 2) * 0.6;
+        ctx.bezierCurveTo(cx1, cPos.y, cx2, sPos.y, sPos.x - nodeR, sPos.y);
+        ctx.strokeStyle = 'rgba(245,158,11,0.2)';
+        ctx.lineWidth = 0.75;
+        ctx.setLineDash([3, 5]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      });
+    });
+  }
+
+  // Draw nodes
+  function drawNode(pos, color) {
+    const { x, y, name } = pos;
+    // Circle
+    ctx.beginPath();
+    ctx.arc(x, y, nodeR, 0, Math.PI * 2);
+    ctx.fillStyle = color + '18';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x, y, nodeR, 0, Math.PI * 2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Label
+    ctx.font = '600 11px Fira Code, monospace';
+    ctx.fillStyle = color;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const shortName = name.length > 8 ? name.substring(0, 7) + '…' : name;
+    ctx.fillText(shortName, x, y);
+
+    // Full name below
+    ctx.font = '400 10px Fira Code, monospace';
+    ctx.fillStyle = COLORS.textMuted;
+    ctx.fillText(name, x, y + nodeR + 12);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  Object.values(nodePositions).forEach(pos => {
+    const color = pos.type === 'entity' ? COLORS.entity
+      : pos.type === 'component' ? COLORS.component
+      : COLORS.system;
+    drawNode(pos, color);
+  });
+
+  // Show component count per entity
+  entities.forEach(e => {
+    const assigned = assignments[e] || new Set();
+    const count = assigned.size;
+    if (count === 0) return;
+    const ePos = nodePositions['e:' + e];
+    if (!ePos) return;
+    ctx.beginPath();
+    ctx.arc(ePos.x + nodeR - 4, ePos.y - nodeR + 4, 8, 0, Math.PI * 2);
+    ctx.fillStyle = '#e8834a';
+    ctx.fill();
+    ctx.font = 'bold 9px Fira Code';
+    ctx.fillStyle = '#07090f';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(count, ePos.x + nodeR - 4, ePos.y - nodeR + 4);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+  });
+}
+
+// ─── SAMPLE DATA ───
+function loadSample() {
+  entities = ['Player', 'Enemy', 'Bullet', 'Camera'];
+  components = ['Position', 'Velocity', 'Health', 'Sprite', 'Collider'];
+  systems = ['MoveSys', 'RenderSys', 'CollisionSys'];
+  assignments = {
+    Player: new Set(['Position', 'Velocity', 'Health', 'Sprite', 'Collider']),
+    Enemy: new Set(['Position', 'Velocity', 'Health', 'Sprite', 'Collider']),
+    Bullet: new Set(['Position', 'Velocity', 'Sprite', 'Collider']),
+    Camera: new Set(['Position'])
+  };
+  renderTags();
+  renderAssign();
+  setTimeout(visualize, 50);
+}
+
+// ─── FAQ ───
+function toggleFaq(btn) {
+  btn.parentElement.classList.toggle('open');
+}
+</script>
+
+</body>
+</html>
